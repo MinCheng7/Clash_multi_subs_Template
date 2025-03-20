@@ -1,0 +1,274 @@
+# Clash 多订阅的配置模板
+# 生成时间：2025年3月20日
+# 作者：MinCheng7, https://github.com/MinCheng7
+# 参考来源1：Christine, https://blog.tyasaka.xyz/posts/clash-vergerev-to-portable
+# 参考来源2：MetaCubeX虚空终端快捷配置, https://wiki.metacubex.one/example/conf/#__tabbed_1_1
+# 端口配置
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+geo-auto-update: true       # 自动更新地理数据文件
+geo-update-interval: 24     # 自动更新的间隔时间（小时）
+geox-url:
+  geoip: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
+  geosite: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
+  asn: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+profile:
+  store-selected: true      # 记住上次选择的节点或策略组
+  store-fake-ip: true       # 记住上次分配给域名的假IP地址，避免频繁变化导致应用出错
+sniffer:
+  enable: true              # 开启嗅探功能
+  force-dns-mapping: true   # 强制将嗅探到的域名映射到DNS请求中
+  parse-pure-ip: true       # 尝试解析纯 IP 流量，查看背后对应的域名
+  override-destination: true    # 嗅探成功后，将连接重定向到正确的目标域名
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]    # 对这些端口上的HTTP流量进行嗅探
+      override-destination: true    # 如果识别出域名，则改为访问域名
+    TLS:
+      ports: [443, 8443]        # 对这些端口上的HTTPS流量嗅探
+    QUIC:
+      ports: [443, 8443]        # 对QUIC协议流量嗅探
+  force-domain:
+    - "+.v2ex.com"          # 对指定域名强制启用嗅探，即使默认不嗅探
+  skip-domain:
+    - "+.mi.com"            # 对指定域名禁止嗅探，避免嗅探误判或影响正常使用
+
+#定义订阅的相同配置部分
+p: &p
+  type: http
+  interval: 3600
+  health-check: 
+    enable: true
+    url: "https://www.gstatic.com/generate_204"
+    interval: 600
+
+# 订阅源配置
+proxy-providers:
+  provider1:  # 机场1的名称，可自定义
+    <<: *p  # 使用定义p
+    url: 'xxxxxx' # 机场订阅链接
+    path: ./provider1.yaml  # yaml文件名称，可自定义
+    override:
+      additional-prefix: "provider1 " # 在属于该机场的节点前面添加文字
+  provider2:
+    <<: *p
+    url: 'xxxxxx'
+    path: ./provider2.yaml
+    override:
+      additional-prefix: "provider2 "
+  provider3:
+    <<: *p
+    url: 'xxxxxx'
+    path: ./provider3.yaml
+    override:
+      additional-prefix: "provider3 "
+
+# 定义策略组使用的订阅
+u: &u
+  use:
+    - provider1
+    - provider2
+    - provider3
+
+# 代理组配置，根据需要自行修改
+proxy-groups:
+
+  - name: '通用'
+    type: url-test
+    proxies:
+      - '新加坡'
+      - '日本'
+      - '韩国'
+      - '香港'
+      - '美国'
+    url: http://www.gstatic.com/generate_204   # 测试地址
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://cdn.pixabay.com/photo/2020/08/19/15/04/icon-5501127_1280.png'  # 图标地址
+
+  - name: 'AI'
+    type: url-test
+    proxies:
+      - '日本'
+      - '韩国'
+      - '美国'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQY42SZMaBKzAc9eysk1v0IpcjhnAcndhtzMQ&s'
+
+  - name: '香港'
+    type: url-test
+    <<: *u
+    filter: 'HK|香港|Hong Kong|HONGKONG'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Flag_of_Hong_Kong.svg/1200px-Flag_of_Hong_Kong.svg.png'
+
+  - name: '台湾'
+    type: url-test
+    <<: *u
+    filter: 'TW|台湾|Taiwan|Tai Wan'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Flag_of_the_Republic_of_China.svg'
+
+  - name: '美国'
+    type: url-test
+    <<: *u
+    filter: 'US|美国|USA'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Flag_of_the_United_States.svg/2560px-Flag_of_the_United_States.svg.png'
+
+  - name: '欧洲'
+    type: url-test
+    <<: *u
+    filter: '🇬🇧|UK|英国|Tur|土耳其|FRG|德国|🇩🇪|荷兰|🇳🇱|法国|🇫🇷'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/1920px-Flag_of_Europe.svg.png'
+
+  - name: '新加坡'
+    type: url-test
+    <<: *u
+    filter: 'SG|singapore|新加坡|新国'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/4/48/Flag_of_Singapore.svg'
+
+  - name: '日本'
+    type: url-test
+    <<: *u
+    filter: 'JP|日本|Japan'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Flag_of_Japan.svg'
+
+  - name: '韩国'
+    type: url-test
+    <<: *u
+    filter: 'KR|韩国|Korea'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg'
+  
+  - name: '其他节点'
+    type: url-test
+    <<: *u
+    filter: '^(?!.*(剩余|到期|US|美国|USA|JP|日本|Japan|SG|新加坡|Singapore|KR|韩国|Korea|🇬🇧|UK|英国|Tur|土耳其|FRG|德国|🇩🇪|荷兰|🇳🇱|法国|🇫🇷|TW|台湾|Taiwan|Tai Wan|HK|香港|Hong Kong|HONGKONG)).*$'
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQP1KuSKHCkEJ_pvlSATUBl2t3dvTnKUKqQaQ&s'
+  
+  - name: '自动选择'
+    type: url-test
+    <<: *u
+    filter: '^(?!.*(剩余|到期)).*$'      # 移除机场的说明性节点
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    max-failed-times: 5
+    icon: 'https://images.icon-icons.com/910/PNG/512/rotating_icon-icons.com_71105.png'
+
+rule-providers:
+  115网盘:
+    type: http
+    behavior: classical
+    url: "https://rule.kelee.one/Clash/115.yaml"  # 规则文件地址
+    interval: 86400                        # 更新间隔（秒）
+    path: ./rules/115.yaml              # 本地保存路径
+  
+  OpenAI:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml"
+    interval: 86400
+    path: ./rules/openai.yaml
+  
+  YouTube:
+    type: http
+    behavior: classical
+    url: "https://rule.kelee.one/Clash/YouTube.yaml"
+    interval: 86400
+    path: ./rules/youtube.yaml
+  
+  Telegram:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.yaml"
+    interval: 86400
+    path: ./rules/telegram.yaml
+
+  clash_DIRECT:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/MinCheng7/SkyRules/refs/heads/main/clash_DIRECT"
+    interval: 86400
+    path: ./rules/clash_DIRECT.yaml
+
+  clash_REJECT:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/MinCheng7/SkyRules/refs/heads/main/clash_REJECT"
+    interval: 86400
+    path: ./rules/clash_REJECT.yaml
+  
+  NoAdLite:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml"
+    interval: 86400
+    path: ./rules/NoAdLite.yaml
+
+  Wikipedia:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Wikipedia/Wikipedia.yaml"
+    interval: 86400
+    path: ./rules/Wikipedia.yaml
+    
+
+# 规则配置
+rules:
+  - RULE-SET,NoAdLite,REJECT
+  - RULE-SET,clash_REJECT,REJECT
+  - RULE-SET,clash_DIRECT,DIRECT
+  - RULE-SET,OpenAI,AI
+  - DOMAIN-SUFFIX,images.steamusercontent.com,通用
+  - DOMAIN-SUFFIX,avatars.fastly.steamstatic.com,通用
+  - DOMAIN-SUFFIX,steamcommunity-a.akamaihd.net,通用
+  - DOMAIN-SUFFIX,store.steampowered.com,通用
+  - DOMAIN-SUFFIX,steam-chat.com,通用
+  - RULE-SET,Telegram,通用
+  - RULE-SET,YouTube,通用
+  - RULE-SET,Wikipedia,通用
+  - RULE-SET,115网盘,DIRECT
+  # 中国站点直连
+  - GEOSITE,CN,DIRECT
+  - GEOIP,CN,DIRECT
+  # 默认规则
+  - MATCH,自动选择
